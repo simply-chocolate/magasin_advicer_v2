@@ -1,0 +1,4 @@
+.env
+attachments/
+cache/
+.DS_Store

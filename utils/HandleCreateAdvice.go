@@ -29,7 +29,7 @@ func HandleCreateAdvice() error {
 		Select:  []string{"DocDate", "DocNum", "CardCode", "StockTransferLines"},
 		OrderBy: []string{"DocNum asc"},
 		Filter:  fmt.Sprintf("DocNum gt %v and contains(CardName,'Magasin')", adviceCache.LastAdviceDocNum),
-		// Filer: "DocNum eq 81651" // For when we need to create a specific advice..
+		// Filer: "DocNum eq 81651" // For when we need to create a specific advice...............
 	})
 	if err != nil {
 		return err

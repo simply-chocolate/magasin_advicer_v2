@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"magasin_advicer/sap_api_wrapper"
+	"magasin_advicer/teams_notifier"
 	"strconv"
 	"strings"
 )
@@ -29,13 +30,15 @@ func HandleCreateAdvice() error {
 		Select:  []string{"DocDate", "DocNum", "CardCode", "StockTransferLines"},
 		OrderBy: []string{"DocNum asc"},
 		Filter:  fmt.Sprintf("DocNum gt %v and contains(CardName,'Magasin')", adviceCache.LastAdviceDocNum),
-		// Filer: "DocNum eq 81651" // For when we need to create a specific advice...............
+		//Filter: "DocNum eq 102987", // For when we need to create a specific advice...............
 	})
 	if err != nil {
-		return err
+		teams_notifier.SendRequestsReturnErrorToTeams("SapApiGetStockTransfers_AllPages", "GET", "Error", err.Error(), "SAP API")
+		return nil
 	}
 	if len(stockTransfers.Body.Value) == 0 {
-		return fmt.Errorf("no advices from this call")
+		teams_notifier.SendNoAdviceToTeams()
+		return nil
 	}
 
 	sapApiItemsResult, err := sap_api_wrapper.SapApiGetItems_AllPages(sap_api_wrapper.SapApiQueryParams{
@@ -43,19 +46,19 @@ func HandleCreateAdvice() error {
 		Filter: "Valid eq 'Y'",
 	})
 	if err != nil {
-		fmt.Println("error, something went wrong while getting the items and their properties")
+		teams_notifier.SendRequestsReturnErrorToTeams("SapApiGetItems_AllPages", "GET", "Error", err.Error(), "SAP API")
+		return nil
 	}
 
+	var magasinAdvicesInfo []teams_notifier.MagasinAdviceInfo
 	for _, stockTransfer := range stockTransfers.Body.Value {
 
 		WarehouseCode, cardCodeExists := cardCodes[stockTransfer.CardCode]
 		if !cardCodeExists {
-			fmt.Printf("cardCode is not a magasin, stockTransfer: %v \n", stockTransfer.DocNum)
-			continue
+			continue // CardCode is not a magasin
 		}
 		if WarehouseCode != stockTransfer.StockTransferLines[0].WarehouseCode {
-			fmt.Printf("warehouse does not match cardcode, stockTransfer %v \n", stockTransfer.DocNum)
-			continue
+			continue // Warehouse does not match cardcode
 		}
 
 		res := "\"Følgeseddel\";\"Indkøbsnummer\";\"Stregkode\";\"Indkøbsantal\";\"Hus\""
@@ -74,12 +77,11 @@ func HandleCreateAdvice() error {
 
 			quantityAsInt, err := stockTransferLine.Quantity.Float64()
 			if err != nil {
-				return fmt.Errorf("error converting quantity to float at stockTransfer: %v", stockTransfer.DocNum)
+				return fmt.Errorf("error converting quantity to float at stockTransfer: %v. Error:%v", stockTransfer.DocNum, err)
 			}
 
 			if barcode == "" {
-				fmt.Printf("This line has no barcode so we just ignore it. Itemnumber:%v and Stockfransfer:%v", stockTransferLine.ItemCode, stockTransfer.DocNum)
-				continue
+				continue // This line has no barcode so we just ignore it.
 			}
 
 			res += fmt.Sprintf("\n\"%v\";\"Magasin\";\"%s\";\"%v\";\"%s\"", stockTransfer.DocNum, strings.ReplaceAll(barcode, "\"", "\"\""), int(quantityAsInt), strings.ReplaceAll(stockTransferLine.WarehouseCode, "\"", "\"\""))
@@ -87,11 +89,17 @@ func HandleCreateAdvice() error {
 
 		SendFileFtp(fmt.Sprintf("%v_Reciept_Magasin_%v.csv", stockTransfer.DocNum, stockTransfer.StockTransferLines[0].WarehouseCode), res)
 		adviceCache.LastAdviceDocNum = strconv.Itoa(stockTransfer.DocNum)
+
+		var magasinAdviceInfo teams_notifier.MagasinAdviceInfo
+		magasinAdviceInfo.AdviceNumber = stockTransfer.DocNum
+		magasinAdviceInfo.HouseNumber = stockTransfer.StockTransferLines[0].WarehouseCode
+		magasinAdvicesInfo = append(magasinAdvicesInfo, magasinAdviceInfo)
 	}
 
 	if err = WriteAdviceCache(adviceCache); err != nil {
 		return fmt.Errorf("error at stockTransfer: %v adding DocNum to JSON ", adviceCache)
 	}
 
+	teams_notifier.SendAdviceSuccesToTeams(magasinAdvicesInfo)
 	return nil
 }

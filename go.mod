@@ -1,6 +1,6 @@
 module magasin_advicer
 
-go 1.18
+go 1.19
 
 require (
 	github.com/atc0005/go-teams-notify/v2 v2.7.0

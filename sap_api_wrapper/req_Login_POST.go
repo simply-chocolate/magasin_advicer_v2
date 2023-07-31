@@ -24,6 +24,7 @@ func SapApiPostLogin(optParams ...int) (SapApiPostLoginReturn, error) {
 	}
 
 	resp, err := GetSapApiBaseClient().
+		//DevMode().
 		R().
 		SetResult(SapApiPostLoginResult{}).
 		SetHeader("Content-Type", "application/json").

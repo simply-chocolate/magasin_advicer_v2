@@ -13,12 +13,12 @@ type MagasinAdviceInfo struct {
 	HouseNumber  string
 }
 
-func SendAdviceSuccesToTeams(Advices []MagasinAdviceInfo) error {
+func SendAdviceSuccesToTeams(Advices []MagasinAdviceInfo, AdviceType string) error {
 	client := goteamsnotify.NewTeamsClient()
 	webhook := os.Getenv("TEAMS_WEBHOOK_URL")
 
 	card := messagecard.NewMessageCard()
-	card.Title = "Succesful Advice run"
+	card.Title = "Succesful Advice run of type " + AdviceType
 
 	cardText := "Script has run and sent the following advices to magasin.<BR/>"
 	for _, advice := range Advices {

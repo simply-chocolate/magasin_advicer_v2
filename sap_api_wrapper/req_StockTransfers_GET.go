@@ -2,7 +2,6 @@ package sap_api_wrapper
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 type SapApiGetStockTransfersResult struct {
@@ -33,19 +32,19 @@ func SapApiGetStockTransfers(params SapApiQueryParams) (SapApiGetStockTransfersR
 
 	resp, err := client.
 		R().
-		SetResult(SapApiGetStockTransfersResult{}).
+		SetSuccessResult(SapApiGetStockTransfersResult{}).
 		SetQueryParams(params.AsReqParams()).
 		Get("StockTransfers")
 	if err != nil {
 		return SapApiGetStockTransfersReturn{}, err
 	}
 
-	if resp.Result() == nil {
-		return SapApiGetStockTransfersReturn{}, fmt.Errorf("no advices from this call")
+	if resp.SuccessResult() == nil {
+		return SapApiGetStockTransfersReturn{}, nil
 	}
 
 	return SapApiGetStockTransfersReturn{
-		Body: resp.Result().(*SapApiGetStockTransfersResult),
+		Body: resp.SuccessResult().(*SapApiGetStockTransfersResult),
 	}, nil
 }
 

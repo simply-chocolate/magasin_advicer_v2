@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -14,15 +15,15 @@ type AdviceCache struct {
 	LastAdviceDocNum string `json:"lastAdviceDocNum"`
 }
 
-func path() string {
+func path(fileName string) string {
 	basePath, _ := filepath.Abs("cache")
 
-	return filepath.Join(basePath, filepath.Base("advice.json"))
+	return filepath.Join(basePath, filepath.Base(fmt.Sprintf("%s.json", fileName)))
 }
 
 // Read the advice number currently stored in the cache
-func ReadAdviceCache() (AdviceCache, error) {
-	file, err := ioutil.ReadFile(path())
+func ReadAdviceCache(fileName string) (AdviceCache, error) {
+	file, err := ioutil.ReadFile(path(fileName))
 	if err != nil {
 		return AdviceCache{}, err
 	}
@@ -36,8 +37,8 @@ func ReadAdviceCache() (AdviceCache, error) {
 }
 
 // Write advice number to the cache
-func WriteAdviceCache(advice AdviceCache) error {
-	adviceCache, err := ReadAdviceCache()
+func WriteAdviceCache(advice AdviceCache, filePath string) error {
+	adviceCache, err := ReadAdviceCache(filePath)
 	if err != nil {
 		return err
 	}
@@ -51,11 +52,11 @@ func WriteAdviceCache(advice AdviceCache) error {
 		return err
 	}
 
-	if _, err = os.Create(path()); err != nil {
+	if _, err = os.Create(path(filePath)); err != nil {
 		return err
 	}
 
-	if err = ioutil.WriteFile(path(), data, fs.ModeAppend); err != nil {
+	if err = ioutil.WriteFile(path(filePath), data, fs.ModeAppend); err != nil {
 		return err
 	}
 

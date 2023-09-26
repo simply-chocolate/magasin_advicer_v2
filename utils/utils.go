@@ -29,10 +29,16 @@ func LoadEnvs() {
 	if os.Getenv("FTP_PORT") == "" {
 		panic("Error loading the environment variable FTP_PORT")
 	}
-	if os.Getenv("FTP_USER") == "" {
+	if os.Getenv("FTP_USER_SIMPLY") == "" {
 		panic("Error loading the environment variable FTP_USER")
 	}
-	if os.Getenv("FTP_PASS") == "" {
+	if os.Getenv("FTP_PASS_SIMPLY") == "" {
+		panic("Error loading the environment variable FTP_PASS")
+	}
+	if os.Getenv("FTP_USER_MAGASIN") == "" {
+		panic("Error loading the environment variable FTP_USER")
+	}
+	if os.Getenv("FTP_PASS_MAGASIN") == "" {
 		panic("Error loading the environment variable FTP_PASS")
 	}
 }

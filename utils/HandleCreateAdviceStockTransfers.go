@@ -9,8 +9,8 @@ import (
 )
 
 // This function will be called from the main, and call the functions that needs to do stuff, in order to create the advices.
-func HandleCreateAdvice() error {
-	cardCodes := map[string]string{
+func HandleCreateAdviceStockTransfers() error {
+	stockTransferCardCodes := map[string]string{
 		"100084": "10",
 		"102024": "15",
 		"100087": "20",
@@ -21,7 +21,7 @@ func HandleCreateAdvice() error {
 		"212868": "60",
 	}
 
-	adviceCache, err := ReadAdviceCache()
+	adviceCache, err := ReadAdviceCache("stockTransfers")
 	if err != nil {
 		return err
 	}
@@ -29,9 +29,10 @@ func HandleCreateAdvice() error {
 	stockTransfers, err := sap_api_wrapper.SapApiGetStockTransfers_AllPages(sap_api_wrapper.SapApiQueryParams{
 		Select:  []string{"DocDate", "DocNum", "CardCode", "StockTransferLines"},
 		OrderBy: []string{"DocNum asc"},
-		Filter:  fmt.Sprintf("DocNum gt %v and contains(CardName,'Magasin')", adviceCache.LastAdviceDocNum),
+		Filter:  fmt.Sprintf("DocNum gt %v and contains(CardName,'Magasin ')", adviceCache.LastAdviceDocNum),
 		//Filter: "DocNum eq 102987", // For when we need to create a specific advice...............
 	})
+
 	if err != nil {
 		teams_notifier.SendRequestsReturnErrorToTeams("SapApiGetStockTransfers_AllPages", "GET", "Error", err.Error(), "SAP API")
 		return nil
@@ -41,7 +42,7 @@ func HandleCreateAdvice() error {
 		return nil
 	}
 
-	sapApiItemsResult, err := sap_api_wrapper.SapApiGetItems_AllPages(sap_api_wrapper.SapApiQueryParams{
+	validItemsSap, err := sap_api_wrapper.SapApiGetItems_AllPages(sap_api_wrapper.SapApiQueryParams{
 		Select: []string{"ItemCode", "ItemBarCodeCollection", "UpdateDate", "UpdateTime"},
 		Filter: "Valid eq 'Y'",
 	})
@@ -53,7 +54,7 @@ func HandleCreateAdvice() error {
 	var magasinAdvicesInfo []teams_notifier.MagasinAdviceInfo
 	for _, stockTransfer := range stockTransfers.Body.Value {
 
-		WarehouseCode, cardCodeExists := cardCodes[stockTransfer.CardCode]
+		WarehouseCode, cardCodeExists := stockTransferCardCodes[stockTransfer.CardCode]
 		if !cardCodeExists {
 			continue // CardCode is not a magasin
 		}
@@ -65,7 +66,7 @@ func HandleCreateAdvice() error {
 
 		for _, stockTransferLine := range stockTransfer.StockTransferLines {
 			var barcode string
-			for _, items := range sapApiItemsResult.Body.Value {
+			for _, items := range validItemsSap.Body.Value {
 				if items.ItemCode == stockTransferLine.ItemCode {
 					for _, barCodeColletion := range items.ItemBarCodeCollection {
 						if barCodeColletion.UoMEntry == stockTransferLine.UoMEntry {
@@ -87,7 +88,7 @@ func HandleCreateAdvice() error {
 			res += fmt.Sprintf("\n\"%v\";\"Magasin\";\"%s\";\"%v\";\"%s\"", stockTransfer.DocNum, strings.ReplaceAll(barcode, "\"", "\"\""), int(quantityAsInt), strings.ReplaceAll(stockTransferLine.WarehouseCode, "\"", "\"\""))
 		}
 
-		SendFileFtp(fmt.Sprintf("%v_Reciept_Magasin_%v.csv", stockTransfer.DocNum, stockTransfer.StockTransferLines[0].WarehouseCode), res)
+		SendFileFtp(fmt.Sprintf("%v_Reciept_Magasin_%v.csv", stockTransfer.DocNum, stockTransfer.StockTransferLines[0].WarehouseCode), res, "SIMPLY")
 		adviceCache.LastAdviceDocNum = strconv.Itoa(stockTransfer.DocNum)
 
 		var magasinAdviceInfo teams_notifier.MagasinAdviceInfo
@@ -96,10 +97,10 @@ func HandleCreateAdvice() error {
 		magasinAdvicesInfo = append(magasinAdvicesInfo, magasinAdviceInfo)
 	}
 
-	if err = WriteAdviceCache(adviceCache); err != nil {
+	if err = WriteAdviceCache(adviceCache, "stockTransfers"); err != nil {
 		return fmt.Errorf("error at stockTransfer: %v adding DocNum to JSON ", adviceCache)
 	}
 
-	teams_notifier.SendAdviceSuccesToTeams(magasinAdvicesInfo)
+	teams_notifier.SendAdviceSuccesToTeams(magasinAdvicesInfo, "SIMPLY: StockTransfers")
 	return nil
 }

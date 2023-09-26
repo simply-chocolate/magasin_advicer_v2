@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"magasin_advicer/sap_api_wrapper"
 	"magasin_advicer/teams_notifier"
 	"magasin_advicer/utils"
 
@@ -16,24 +15,39 @@ func main() {
 
 	fmt.Printf("%v: Started the Script \n", time.Now().UTC().Format("2006-01-02 15:04:05"))
 
-	err := utils.HandleCreateAdvice()
+	fmt.Printf("%v: Handling Stock Transfers \n", time.Now().UTC().Format("2006-01-02 15:04:05"))
+	err := utils.HandleCreateAdviceStockTransfers()
 	if err != nil {
 		teams_notifier.SendUnknownErrorToTeams(err)
 	}
-	fmt.Printf("%v: Success \n", time.Now().UTC().Format("2006-01-02 15:04:05"))
+	fmt.Printf("%v: Success handling Stock Transfers \n", time.Now().UTC().Format("2006-01-02 15:04:05"))
+
+	fmt.Printf("%v: Handling Orders \n", time.Now().UTC().Format("2006-01-02 15:04:05"))
+	err = utils.HandleCreateAdviceOrders()
+	if err != nil {
+		teams_notifier.SendUnknownErrorToTeams(err)
+	}
+	fmt.Printf("%v: Success handling Orders \n", time.Now().UTC().Format("2006-01-02 15:04:05"))
+
 	fmt.Printf("%v: Started the Cron Scheduler", time.Now().UTC().Format("2006-01-02 15:04:05"))
 
 	s := gocron.NewScheduler(time.UTC)
 	_, _ = s.Cron("0 4,15 * * 1-5").SingletonMode().Do(func() {
-		fmt.Printf("%v: Started the Script \n", time.Now().UTC().Format("2006-01-02 15:04:05"))
 
-		err := utils.HandleCreateAdvice()
+		fmt.Printf("%v: Handling Stock Transfers \n", time.Now().UTC().Format("2006-01-02 15:04:05"))
+		err = utils.HandleCreateAdviceStockTransfers()
 		if err != nil {
 			teams_notifier.SendUnknownErrorToTeams(err)
 		}
+		fmt.Printf("%v: Success handling Stock Transfers \n", time.Now().UTC().Format("2006-01-02 15:04:05"))
 
-		sap_api_wrapper.SapApiPostLogout()
-		fmt.Printf("%v: Success \n", time.Now().UTC().Format("2006-01-02 15:04:05"))
+		fmt.Printf("%v: Handling Orders \n", time.Now().UTC().Format("2006-01-02 15:04:05"))
+		err = utils.HandleCreateAdviceOrders()
+		if err != nil {
+			teams_notifier.SendUnknownErrorToTeams(err)
+		}
+		fmt.Printf("%v: Success handling Orders \n", time.Now().UTC().Format("2006-01-02 15:04:05"))
+
 	})
 
 	s.StartBlocking()

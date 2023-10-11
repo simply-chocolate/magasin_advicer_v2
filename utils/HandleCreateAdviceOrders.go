@@ -100,7 +100,7 @@ func HandleCreateAdviceOrders() error {
 			res += fmt.Sprintf("\n\"%v\";\"%v\";\"%s\";\"%v\";\"%s\"", order.DocNum, strings.ReplaceAll(orderNumber, "\"", "\"\""), strings.ReplaceAll(barcode, "\"", "\"\""), int(quantity), strings.ReplaceAll(warehouseCode, "\"", "\"\""))
 		}
 
-		err = SendFileFtp(fmt.Sprintf("%v_Reciept_Magasin_%v.csv", order.DocNum, warehouseCode), res, "MAGASIN")
+		err = SendFileFtp(fmt.Sprintf("%v_Order_Reciept_Magasin_%v.csv", order.DocNum, warehouseCode), res, "MAGASIN")
 		if err != nil {
 			teams_notifier.SendRequestsReturnErrorToTeams("SendFileFtp", "POST", "Error", err.Error(), "FTP")
 			return nil

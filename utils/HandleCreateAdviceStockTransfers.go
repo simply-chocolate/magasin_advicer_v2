@@ -56,9 +56,11 @@ func HandleCreateAdviceStockTransfers() error {
 
 		WarehouseCode, cardCodeExists := stockTransferCardCodes[stockTransfer.CardCode]
 		if !cardCodeExists {
+			fmt.Println("CardCode is not a magasin")
 			continue // CardCode is not a magasin
 		}
 		if WarehouseCode != stockTransfer.StockTransferLines[0].WarehouseCode {
+			fmt.Println("Warehouse does not match cardcode")
 			continue // Warehouse does not match cardcode
 		}
 
@@ -88,7 +90,7 @@ func HandleCreateAdviceStockTransfers() error {
 			res += fmt.Sprintf("\n\"%v\";\"Magasin\";\"%s\";\"%v\";\"%s\"", stockTransfer.DocNum, strings.ReplaceAll(barcode, "\"", "\"\""), int(quantityAsInt), strings.ReplaceAll(stockTransferLine.WarehouseCode, "\"", "\"\""))
 		}
 
-		SendFileFtp(fmt.Sprintf("%v_Reciept_Magasin_%v.csv", stockTransfer.DocNum, stockTransfer.StockTransferLines[0].WarehouseCode), res, "SIMPLY")
+		SendFileFtp(fmt.Sprintf("%v_StockTransfer_Reciept_Simply_%v.csv", stockTransfer.DocNum, stockTransfer.StockTransferLines[0].WarehouseCode), res, "SIMPLY")
 		adviceCache.LastAdviceDocNum = strconv.Itoa(stockTransfer.DocNum)
 
 		var magasinAdviceInfo teams_notifier.MagasinAdviceInfo

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -23,7 +22,7 @@ func path(fileName string) string {
 
 // Read the advice number currently stored in the cache
 func ReadAdviceCache(fileName string) (AdviceCache, error) {
-	file, err := ioutil.ReadFile(path(fileName))
+	file, err := os.ReadFile(path(fileName))
 	if err != nil {
 		return AdviceCache{}, err
 	}
@@ -56,7 +55,7 @@ func WriteAdviceCache(advice AdviceCache, filePath string) error {
 		return err
 	}
 
-	if err = ioutil.WriteFile(path(filePath), data, fs.ModeAppend); err != nil {
+	if err = os.WriteFile(path(filePath), data, fs.ModeAppend); err != nil {
 		return err
 	}
 

@@ -38,7 +38,7 @@ func HandleCreateAdviceOrders() error {
 		return nil
 	}
 	if len(orders.Body.Value) == 0 {
-		teams_notifier.SendNoAdviceToTeams()
+		teams_notifier.SendNoAdviceToTeams("MAGASIN: Order")
 		return nil
 	}
 

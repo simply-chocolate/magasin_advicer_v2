@@ -38,7 +38,7 @@ func HandleCreateAdviceStockTransfers() error {
 		return nil
 	}
 	if len(stockTransfers.Body.Value) == 0 {
-		teams_notifier.SendNoAdviceToTeams()
+		teams_notifier.SendNoAdviceToTeams("SIMPLY: StockTransfers")
 		return nil
 	}
 
@@ -101,6 +101,9 @@ func HandleCreateAdviceStockTransfers() error {
 		return fmt.Errorf("error at stockTransfer: %v adding DocNum to JSON ", adviceCache)
 	}
 
+	if len(magasinAdvicesInfo) == 0 {
+		fmt.Printf("AdvicesInfo is empty. StockTransfer: %v", stockTransfers.Body.Value)
+	}
 	teams_notifier.SendAdviceSuccesToTeams(magasinAdvicesInfo, "SIMPLY: StockTransfers")
 	return nil
 }

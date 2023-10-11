@@ -18,7 +18,11 @@ func SendAdviceSuccesToTeams(Advices []MagasinAdviceInfo, AdviceType string) err
 	webhook := os.Getenv("TEAMS_WEBHOOK_URL")
 
 	card := messagecard.NewMessageCard()
-	card.Title = "Succesful Advice run of type " + AdviceType
+	if len(Advices) == 0 {
+		fmt.Println("No advices to send to teams?")
+	}
+
+	card.Title = AdviceType + ": Succesful Advice run"
 
 	cardText := "Script has run and sent the following advices to magasin.<BR/>"
 	for _, advice := range Advices {

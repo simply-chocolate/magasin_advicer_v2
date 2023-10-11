@@ -56,12 +56,12 @@ func HandleCreateAdviceStockTransfers() error {
 
 		WarehouseCode, cardCodeExists := stockTransferCardCodes[stockTransfer.CardCode]
 		if !cardCodeExists {
-			fmt.Println("CardCode is not a magasin")
+			fmt.Println("DocNum: ", stockTransfer.DocNum, " CardCode is not a magasin: ", stockTransfer.CardCode)
 			continue // CardCode is not a magasin
 		}
 		if WarehouseCode != stockTransfer.StockTransferLines[0].WarehouseCode {
-			fmt.Println("Warehouse does not match cardcode")
-			continue // Warehouse does not match cardcode
+			fmt.Println("DocNum: ", stockTransfer.DocNum, " Warehouse does not match cardcode: ", stockTransfer.StockTransferLines[0].WarehouseCode, " - ", WarehouseCode)
+			continue // Warehouse does not match expected warehouse
 		}
 
 		res := "\"Følgeseddel\";\"Indkøbsnummer\";\"Stregkode\";\"Indkøbsantal\";\"Hus\""

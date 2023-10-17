@@ -12,6 +12,7 @@ import (
 func HandleCreateAdviceStockTransfers() error {
 	stockTransferCardCodes := map[string]string{
 		"100084": "10",
+		"100085": "10",
 		"102024": "15",
 		"100087": "20",
 		"100334": "25",

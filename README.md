@@ -1,4 +1,5 @@
 # Magasin Advicer
+Created by Jedikrigeren for simply-chocolate
 
 Purpose of this script is to send an "advice" to magasin when we are sending them goods. The Advice is a CSV file that is uploadet to their FTP server.
 

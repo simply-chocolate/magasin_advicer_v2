@@ -32,7 +32,7 @@ func main() {
 	fmt.Printf("%v: Started the Cron Scheduler", time.Now().UTC().Format("2006-01-02 15:04:05"))
 
 	s := gocron.NewScheduler(time.UTC)
-	_, _ = s.Cron("0 4,15 * * 1-5").SingletonMode().Do(func() {
+	_, _ = s.Cron("0 * * * *").SingletonMode().Do(func() {
 
 		fmt.Printf("%v: Handling Stock Transfers \n", time.Now().UTC().Format("2006-01-02 15:04:05"))
 		err = utils.HandleCreateAdviceStockTransfers()

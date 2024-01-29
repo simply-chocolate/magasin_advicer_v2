@@ -29,7 +29,7 @@ func HandleCreateAdviceOrders() error {
 	orders, err := sap_api_wrapper.SapApiGetOrders_AllPages(sap_api_wrapper.SapApiQueryParams{
 		Select:  []string{"DocDate", "DocNum", "CardCode", "NumAtCard", "DocumentLines"},
 		OrderBy: []string{"DocNum asc"},
-		Filter:  fmt.Sprintf("(DocNum gt %v or U_CCF_AdviceStatus = 'S') and startswith(CardName,'Magasin ') and CardCode ne '100084'", adviceCache.LastAdviceDocNum),
+		Filter:  fmt.Sprintf("(DocNum gt %v or U_CCF_AdviceStatus eq 'S') and startswith(CardName,'Magasin ') and CardCode ne '100084'", adviceCache.LastAdviceDocNum),
 		//Filter: "DocNum eq 102987", // For when we need to create a specific advice...............
 	})
 

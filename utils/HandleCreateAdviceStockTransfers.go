@@ -30,7 +30,7 @@ func HandleCreateAdviceStockTransfers() error {
 	stockTransfers, err := sap_api_wrapper.SapApiGetStockTransfers_AllPages(sap_api_wrapper.SapApiQueryParams{
 		Select:  []string{"DocDate", "DocNum", "CardCode", "StockTransferLines"},
 		OrderBy: []string{"DocNum asc"},
-		Filter:  fmt.Sprintf("(DocNum gt %v or U_CCF_AdviceStatus = 'S') and contains(CardName,'Magasin ')", adviceCache.LastAdviceDocNum),
+		Filter:  fmt.Sprintf("(DocNum gt %v or U_CCF_AdviceStatus eq 'S') and contains(CardName,'Magasin ')", adviceCache.LastAdviceDocNum),
 		//Filter: "DocNum eq 102987", // For when we need to create a specific advice...............
 	})
 

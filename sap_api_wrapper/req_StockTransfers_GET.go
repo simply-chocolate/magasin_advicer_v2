@@ -45,7 +45,8 @@ func SapApiGetStockTransfers(params SapApiQueryParams) (SapApiGetStockTransfersR
 	}
 
 	if resp.SuccessResult() == nil {
-		return SapApiGetStockTransfersReturn{}, nil
+		fmt.Println(resp)
+		return SapApiGetStockTransfersReturn{}, fmt.Errorf("No orders were found")
 	}
 
 	return SapApiGetStockTransfersReturn{

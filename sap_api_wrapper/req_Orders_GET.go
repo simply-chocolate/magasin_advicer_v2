@@ -7,11 +7,12 @@ import (
 
 type SapApiGetOrdersResult struct {
 	Value []struct {
-		DocDate     string `json:"DocDate"`
-		DocNum      int    `json:"DocNum"`
-		CardCode    string `json:"CardCode"`
-		OrderNumber string `json:"NumAtCard"`
-		OrderLines  []struct {
+		DocDate      string `json:"DocDate"`
+		DocNum       int    `json:"DocNum"`
+		CardCode     string `json:"CardCode"`
+		OrderNumber  string `json:"NumAtCard"`
+		AdviceStatus string `json:"U_CCF_AdviceStatus"` // N = Default is not sent | Y = Is sent | S = Send again
+		OrderLines   []struct {
 			ItemCode           string      `json:"ItemCode"`
 			WarehouseCode      string      `json:"WarehouseCode"`
 			UoMEntry           json.Number `json:"UoMEntry"`

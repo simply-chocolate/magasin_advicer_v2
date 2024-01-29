@@ -29,7 +29,7 @@ func HandleCreateAdviceOrders() error {
 	orders, err := sap_api_wrapper.SapApiGetOrders_AllPages(sap_api_wrapper.SapApiQueryParams{
 		Select:  []string{"DocDate", "DocNum", "CardCode", "NumAtCard", "DocumentLines"},
 		OrderBy: []string{"DocNum asc"},
-		Filter:  fmt.Sprintf("DocNum gt %v and startswith(CardName,'Magasin ') and CardCode ne '100084'", adviceCache.LastAdviceDocNum),
+		Filter:  fmt.Sprintf("(DocNum gt %v or U_CCF_AdviceStatus = 'S') and startswith(CardName,'Magasin ') and CardCode ne '100084'", adviceCache.LastAdviceDocNum),
 		//Filter: "DocNum eq 102987", // For when we need to create a specific advice...............
 	})
 
@@ -53,7 +53,7 @@ func HandleCreateAdviceOrders() error {
 
 	var magasinAdvicesInfo []teams_notifier.MagasinAdviceInfo
 	for _, order := range orders.Body.Value {
-
+		var docNum string
 		warehouseCode, cardCodeExists := orderCardCodes[order.CardCode]
 		if !cardCodeExists {
 			continue // CardCode is not the correct Magasin for orders
@@ -96,11 +96,15 @@ func HandleCreateAdviceOrders() error {
 			if barcode == "" {
 				continue // This line has no barcode so we just ignore it.
 			}
-
-			res += fmt.Sprintf("\n\"%v\";\"%v\";\"%s\";\"%v\";\"%s\"", order.DocNum, strings.ReplaceAll(orderNumber, "\"", "\"\""), strings.ReplaceAll(barcode, "\"", "\"\""), int(quantity), strings.ReplaceAll(warehouseCode, "\"", "\"\""))
+			if order.AdviceStatus == "S" {
+				docNum = fmt.Sprintf("%vRetry", order.DocNum)
+			} else {
+				docNum = fmt.Sprint(order.DocNum)
+			}
+			res += fmt.Sprintf("\n\"%v\";\"%v\";\"%s\";\"%v\";\"%s\"", docNum, strings.ReplaceAll(orderNumber, "\"", "\"\""), strings.ReplaceAll(barcode, "\"", "\"\""), int(quantity), strings.ReplaceAll(warehouseCode, "\"", "\"\""))
 		}
 
-		err = SendFileFtp(fmt.Sprintf("%v_Order_Reciept_Magasin_%v.csv", order.DocNum, warehouseCode), res, "MAGASIN")
+		err = SendFileFtp(fmt.Sprintf("%v_Order_Reciept_Magasin_%v.csv", docNum, warehouseCode), res, "MAGASIN")
 		if err != nil {
 			teams_notifier.SendRequestsReturnErrorToTeams("SendFileFtp", "POST", "Error", err.Error(), "FTP")
 			return nil

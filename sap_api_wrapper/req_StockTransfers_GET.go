@@ -9,6 +9,7 @@ type SapApiGetStockTransfersResult struct {
 		DocDate            string `json:"DocDate"`
 		DocNum             int    `json:"DocNum"`
 		CardCode           string `json:"CardCode"`
+		AdviceStatus       string `json:"U_CCF_AdviceStatus"` // N = Default is not sent | Y = Is sent | S = Send again
 		StockTransferLines []struct {
 			ItemCode      string      `json:"ItemCode"`
 			WarehouseCode string      `json:"WarehouseCode"`

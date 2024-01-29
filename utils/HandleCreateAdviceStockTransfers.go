@@ -30,7 +30,7 @@ func HandleCreateAdviceStockTransfers() error {
 	stockTransfers, err := sap_api_wrapper.SapApiGetStockTransfers_AllPages(sap_api_wrapper.SapApiQueryParams{
 		Select:  []string{"DocDate", "DocNum", "CardCode", "StockTransferLines"},
 		OrderBy: []string{"DocNum asc"},
-		Filter:  fmt.Sprintf("DocNum gt %v and contains(CardName,'Magasin ')", adviceCache.LastAdviceDocNum),
+		Filter:  fmt.Sprintf("(DocNum gt %v or U_CCF_AdviceStatus = 'S') and contains(CardName,'Magasin ')", adviceCache.LastAdviceDocNum),
 		//Filter: "DocNum eq 102987", // For when we need to create a specific advice...............
 	})
 
@@ -54,7 +54,7 @@ func HandleCreateAdviceStockTransfers() error {
 
 	var magasinAdvicesInfo []teams_notifier.MagasinAdviceInfo
 	for _, stockTransfer := range stockTransfers.Body.Value {
-
+		var docNum string
 		WarehouseCode, cardCodeExists := stockTransferCardCodes[stockTransfer.CardCode]
 		if !cardCodeExists {
 			fmt.Println("DocNum: ", stockTransfer.DocNum, " CardCode is not a magasin: ", stockTransfer.CardCode)
@@ -88,13 +88,20 @@ func HandleCreateAdviceStockTransfers() error {
 				continue // This line has no barcode so we just ignore it.
 			}
 
-			res += fmt.Sprintf("\n\"%v\";\"Magasin\";\"%s\";\"%v\";\"%s\"", stockTransfer.DocNum, strings.ReplaceAll(barcode, "\"", "\"\""), int(quantityAsInt), strings.ReplaceAll(stockTransferLine.WarehouseCode, "\"", "\"\""))
+			if stockTransfer.AdviceStatus == "S" {
+				docNum = fmt.Sprintf("%vRetry", stockTransfer.DocNum)
+			} else {
+				docNum = fmt.Sprint(stockTransfer.DocNum)
+			}
+
+			res += fmt.Sprintf("\n\"%v\";\"Magasin\";\"%s\";\"%v\";\"%s\"", docNum, strings.ReplaceAll(barcode, "\"", "\"\""), int(quantityAsInt), strings.ReplaceAll(stockTransferLine.WarehouseCode, "\"", "\"\""))
 		}
 
-		SendFileFtp(fmt.Sprintf("%v_StockTransfer_Reciept_Simply_%v.csv", stockTransfer.DocNum, stockTransfer.StockTransferLines[0].WarehouseCode), res, "SIMPLY")
+		SendFileFtp(fmt.Sprintf("%v_StockTransfer_Reciept_Simply_%v.csv", docNum, stockTransfer.StockTransferLines[0].WarehouseCode), res, "SIMPLY")
 		adviceCache.LastAdviceDocNum = strconv.Itoa(stockTransfer.DocNum)
 
 		var magasinAdviceInfo teams_notifier.MagasinAdviceInfo
+
 		magasinAdviceInfo.AdviceNumber = stockTransfer.DocNum
 		magasinAdviceInfo.HouseNumber = stockTransfer.StockTransferLines[0].WarehouseCode
 		magasinAdvicesInfo = append(magasinAdvicesInfo, magasinAdviceInfo)

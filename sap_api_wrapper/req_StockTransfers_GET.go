@@ -45,7 +45,6 @@ func SapApiGetStockTransfers(params SapApiQueryParams) (SapApiGetStockTransfersR
 	}
 
 	if resp.SuccessResult() == nil {
-		fmt.Println(resp)
 		return SapApiGetStockTransfersReturn{}, fmt.Errorf("No orders were found")
 	}
 
@@ -63,8 +62,6 @@ func SapApiGetStockTransfers_AllPages(params SapApiQueryParams) (SapApiGetStockT
 		if err != nil {
 			return SapApiGetStockTransfersReturn{}, err
 		}
-
-		fmt.Println(getStockTransferRes)
 
 		res.Value = append(res.Value, getStockTransferRes.Body.Value...)
 

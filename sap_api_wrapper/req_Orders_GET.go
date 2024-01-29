@@ -49,7 +49,8 @@ func SapApiGetOrders(params SapApiQueryParams) (SapApiGetOrdersReturn, error) {
 	}
 
 	if resp.SuccessResult() == nil {
-		return SapApiGetOrdersReturn{}, nil
+		fmt.Println(resp)
+		return SapApiGetOrdersReturn{}, fmt.Errorf("No orders were found")
 	}
 
 	return SapApiGetOrdersReturn{

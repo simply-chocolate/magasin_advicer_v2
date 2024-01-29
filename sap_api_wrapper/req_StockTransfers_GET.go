@@ -63,6 +63,8 @@ func SapApiGetStockTransfers_AllPages(params SapApiQueryParams) (SapApiGetStockT
 			return SapApiGetStockTransfersReturn{}, err
 		}
 
+		fmt.Println(getStockTransferRes)
+
 		res.Value = append(res.Value, getStockTransferRes.Body.Value...)
 
 		if getStockTransferRes.Body.NextLink == "" {

@@ -107,13 +107,11 @@ func HandleCreateAdviceOrders() error {
 			res += fmt.Sprintf("\n\"%v\";\"%v\";\"%s\";\"%v\";\"%s\"", docNum, strings.ReplaceAll(orderNumber, "\"", "\"\""), strings.ReplaceAll(barcode, "\"", "\"\""), int(quantity), strings.ReplaceAll(warehouseCode, "\"", "\"\""))
 		}
 
-		/*
-			    err = SendFileFtp(fmt.Sprintf("%v_Order_Reciept_Magasin_%v.csv", docNum, warehouseCode), res, "MAGASIN")
-					if err != nil {
-						teams_notifier.SendRequestsReturnErrorToTeams("SendFileFtp", "POST", "Error", err.Error(), "FTP")
-						return nil
-					}
-		*/
+		err = SendFileFtp(fmt.Sprintf("%v_Order_Reciept_Magasin_%v.csv", docNum, warehouseCode), res, "MAGASIN")
+		if err != nil {
+			teams_notifier.SendRequestsReturnErrorToTeams("SendFileFtp", "POST", "Error", err.Error(), "FTP")
+			return nil
+		}
 
 		err = sap_api_wrapper.SetAdviceStatus(order.DocEntry, "Y", "DeliveryNotes")
 		if err != nil {

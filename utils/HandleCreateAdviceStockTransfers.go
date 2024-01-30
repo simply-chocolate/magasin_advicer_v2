@@ -86,10 +86,10 @@ func HandleCreateAdviceStockTransfers() error {
 				continue // This line has no barcode so we just ignore it.
 			}
 
+			docNum = fmt.Sprint(stockTransfer.DocNum)
+
 			if stockTransfer.AdviceStatus == "S" {
-				docNum = fmt.Sprintf("%vRetry", stockTransfer.DocNum)
 			} else {
-				docNum = fmt.Sprint(stockTransfer.DocNum)
 				adviceCache.LastAdviceDocNum = strconv.Itoa(stockTransfer.DocNum)
 			}
 

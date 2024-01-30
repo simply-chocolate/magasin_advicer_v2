@@ -97,11 +97,10 @@ func HandleCreateAdviceOrders() error {
 				continue // This line has no barcode so we just ignore it.
 			}
 
-			fmt.Printf("OrderNumber is %v and has adviceStatus: %v\n", order.DocNum, order.AdviceStatus)
+			docNum = fmt.Sprint(order.DocNum)
+
 			if order.AdviceStatus == "S" {
-				docNum = fmt.Sprintf("%vRetry", order.DocNum)
 			} else {
-				docNum = fmt.Sprint(order.DocNum)
 				adviceCache.LastAdviceDocNum = strconv.Itoa(order.DocNum)
 			}
 			res += fmt.Sprintf("\n\"%v\";\"%v\";\"%s\";\"%v\";\"%s\"", docNum, strings.ReplaceAll(orderNumber, "\"", "\"\""), strings.ReplaceAll(barcode, "\"", "\"\""), int(quantity), strings.ReplaceAll(warehouseCode, "\"", "\"\""))

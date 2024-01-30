@@ -27,7 +27,7 @@ func HandleCreateAdviceOrders() error {
 	}
 
 	orders, err := sap_api_wrapper.SapApiGetOrders_AllPages(sap_api_wrapper.SapApiQueryParams{
-		Select:  []string{"DocDate", "DocNum", "CardCode", "NumAtCard", "DocumentLines"},
+		Select:  []string{"DocEntry", "DocDate", "DocNum", "CardCode", "NumAtCard", "U_CCF_AdviceStatus", "DocumentLines"},
 		OrderBy: []string{"DocNum asc"},
 		Filter:  fmt.Sprintf("(DocNum gt %v or U_CCF_AdviceStatus eq 'S') and startswith(CardName,'Magasin ') and CardCode ne '100084'", adviceCache.LastAdviceDocNum),
 		//Filter: "DocNum eq 102987", // For when we need to create a specific advice...............
@@ -96,29 +96,39 @@ func HandleCreateAdviceOrders() error {
 			if barcode == "" {
 				continue // This line has no barcode so we just ignore it.
 			}
+
+			fmt.Printf("OrderNumber is %v and has adviceStatus: %v\n", order.DocNum, order.AdviceStatus)
 			if order.AdviceStatus == "S" {
 				docNum = fmt.Sprintf("%vRetry", order.DocNum)
 			} else {
 				docNum = fmt.Sprint(order.DocNum)
+				adviceCache.LastAdviceDocNum = strconv.Itoa(order.DocNum)
 			}
 			res += fmt.Sprintf("\n\"%v\";\"%v\";\"%s\";\"%v\";\"%s\"", docNum, strings.ReplaceAll(orderNumber, "\"", "\"\""), strings.ReplaceAll(barcode, "\"", "\"\""), int(quantity), strings.ReplaceAll(warehouseCode, "\"", "\"\""))
 		}
 
-		err = SendFileFtp(fmt.Sprintf("%v_Order_Reciept_Magasin_%v.csv", docNum, warehouseCode), res, "MAGASIN")
+		/*
+			    err = SendFileFtp(fmt.Sprintf("%v_Order_Reciept_Magasin_%v.csv", docNum, warehouseCode), res, "MAGASIN")
+					if err != nil {
+						teams_notifier.SendRequestsReturnErrorToTeams("SendFileFtp", "POST", "Error", err.Error(), "FTP")
+						return nil
+					}
+		*/
+
+		err = sap_api_wrapper.SetAdviceStatus(order.DocEntry, "Y", "DeliveryNotes")
 		if err != nil {
-			teams_notifier.SendRequestsReturnErrorToTeams("SendFileFtp", "POST", "Error", err.Error(), "FTP")
-			return nil
+			fmt.Println(err)
 		}
-		adviceCache.LastAdviceDocNum = strconv.Itoa(order.DocNum)
 
 		var magasinAdviceInfo teams_notifier.MagasinAdviceInfo
 		magasinAdviceInfo.AdviceNumber = order.DocNum
 		magasinAdviceInfo.HouseNumber = warehouseCode
 		magasinAdvicesInfo = append(magasinAdvicesInfo, magasinAdviceInfo)
 	}
-
-	if err = WriteAdviceCache(adviceCache, "orders"); err != nil {
-		return fmt.Errorf("error at order: %v adding DocNum to JSON ", adviceCache)
+	if adviceCache.LastAdviceDocNum != "" {
+		if err = WriteAdviceCache(adviceCache, "orders"); err != nil {
+			return fmt.Errorf("error at order: %v adding DocNum to JSON ", adviceCache)
+		}
 	}
 
 	teams_notifier.SendAdviceSuccesToTeams(magasinAdvicesInfo, "MAGASIN: Order")

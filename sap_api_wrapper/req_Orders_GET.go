@@ -7,6 +7,7 @@ import (
 
 type SapApiGetOrdersResult struct {
 	Value []struct {
+		DocEntry     int    `json:"DocEntry"`
 		DocDate      string `json:"DocDate"`
 		DocNum       int    `json:"DocNum"`
 		CardCode     string `json:"CardCode"`
@@ -41,6 +42,7 @@ func SapApiGetOrders(params SapApiQueryParams) (SapApiGetOrdersReturn, error) {
 		SetSuccessResult(SapApiGetOrdersResult{}).
 		SetQueryParams(params.AsReqParams()).
 		Get("DeliveryNotes")
+
 	if err != nil {
 		if resp.ErrorResult() == nil {
 			return SapApiGetOrdersReturn{}, fmt.Errorf("error getting orders: %v", err)
@@ -50,7 +52,7 @@ func SapApiGetOrders(params SapApiQueryParams) (SapApiGetOrdersReturn, error) {
 
 	if resp.SuccessResult() == nil {
 		fmt.Println(resp)
-		return SapApiGetOrdersReturn{}, fmt.Errorf("No orders were found")
+		return SapApiGetOrdersReturn{}, fmt.Errorf("no orders were found")
 	}
 
 	return SapApiGetOrdersReturn{

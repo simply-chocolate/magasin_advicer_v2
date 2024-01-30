@@ -7,6 +7,7 @@ import (
 
 type SapApiGetStockTransfersResult struct {
 	Value []struct {
+		DocEntry           int    `json:"DocEntry"`
 		DocDate            string `json:"DocDate"`
 		DocNum             int    `json:"DocNum"`
 		CardCode           string `json:"CardCode"`
@@ -45,7 +46,7 @@ func SapApiGetStockTransfers(params SapApiQueryParams) (SapApiGetStockTransfersR
 	}
 
 	if resp.SuccessResult() == nil {
-		return SapApiGetStockTransfersReturn{}, fmt.Errorf("No orders were found")
+		return SapApiGetStockTransfersReturn{}, fmt.Errorf("no orders were found")
 	}
 
 	return SapApiGetStockTransfersReturn{

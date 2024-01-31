@@ -123,6 +123,7 @@ func HandleCreateAdviceOrders() error {
 		magasinAdvicesInfo = append(magasinAdvicesInfo, magasinAdviceInfo)
 	}
 	if adviceCache.LastAdviceDocNum != "" {
+
 		if err = WriteAdviceCache(adviceCache, "orders"); err != nil {
 			return fmt.Errorf("error at order: %v adding DocNum to JSON ", adviceCache)
 		}

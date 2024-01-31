@@ -53,8 +53,6 @@ func SetAdviceStatus(docEntry int, adviceStatus string, docType string) error {
 		return err
 	}
 
-	fmt.Printf("Deliverynote %v is being patched: %v", docEntry, resp)
-
 	if resp.IsErrorState() {
 		fmt.Printf("resp is err statusCode: %v. Dump: %v\n", resp.StatusCode, resp.Dump())
 		return resp.Err

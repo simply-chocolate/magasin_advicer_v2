@@ -96,12 +96,14 @@ func HandleCreateAdviceStockTransfers() error {
 			res += fmt.Sprintf("\n\"%v\";\"Magasin\";\"%s\";\"%v\";\"%s\"", docNum, strings.ReplaceAll(barcode, "\"", "\"\""), int(quantityAsInt), strings.ReplaceAll(stockTransferLine.WarehouseCode, "\"", "\"\""))
 		}
 
-		SendFileFtp(fmt.Sprintf("%v_StockTransfer_Reciept_Simply_%v.csv", docNum, stockTransfer.StockTransferLines[0].WarehouseCode), res, "SIMPLY")
-
+		/*
+			SendFileFtp(fmt.Sprintf("%v_StockTransfer_Reciept_Simply_%v.csv", docNum, stockTransfer.StockTransferLines[0].WarehouseCode), res, "SIMPLY")
+		*/
 		err = sap_api_wrapper.SetAdviceStatus(stockTransfer.DocEntry, "Y", "StockTransfers")
 		if err != nil {
 			fmt.Println(err)
 		}
+
 		var magasinAdviceInfo teams_notifier.MagasinAdviceInfo
 
 		magasinAdviceInfo.AdviceNumber = stockTransfer.DocNum
@@ -110,8 +112,8 @@ func HandleCreateAdviceStockTransfers() error {
 	}
 
 	if adviceCache.LastAdviceDocNum != "" {
-		if err = WriteAdviceCache(adviceCache, "orders"); err != nil {
-			return fmt.Errorf("error at order: %v adding DocNum to JSON ", adviceCache)
+		if err = WriteAdviceCache(adviceCache, "stockTransfers"); err != nil {
+			return fmt.Errorf("error at stockTransfer: %v adding DocNum to JSON ", adviceCache)
 		}
 	}
 

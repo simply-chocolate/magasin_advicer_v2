@@ -4,60 +4,38 @@ import (
 	"fmt"
 	"magasin_advicer/sap_api_wrapper"
 	"magasin_advicer/teams_notifier"
-	"strconv"
+	"os"
 	"strings"
 )
 
 // This function will be called from the main, and call the functions that needs to do stuff, in order to create the advices.
-func HandleCreateAdviceStockTransfers() error {
-	stockTransferCardCodes := map[string]string{
-		"100084": "10",
-		"100085": "10",
-		"102024": "15",
-		"100087": "20",
-		"100334": "25",
-		"100089": "30",
-		"100088": "40",
-		"100090": "50",
-		"212868": "60",
-	}
+func HandleCreateAdviceStockTransfers(
+	businessPartners map[string]sap_api_wrapper.BusinessPartner,
+	cardCodeString string,
+	validItemsSap sap_api_wrapper.SapApiGetItemsReturn) error {
 
-	adviceCache, err := ReadAdviceCache("stockTransfers")
+	stockTransfers, err := GetSapStockTransfers(cardCodeString)
 	if err != nil {
 		return err
 	}
-
-	stockTransfers, err := sap_api_wrapper.SapApiGetStockTransfers_AllPages(sap_api_wrapper.SapApiQueryParams{
-		Select:  []string{"DocEntry", "DocDate", "DocNum", "CardCode", "U_CCF_AdviceStatus", "StockTransferLines"},
-		OrderBy: []string{"DocNum asc"},
-		Filter:  fmt.Sprintf("(DocNum gt %v or U_CCF_AdviceStatus eq 'S') and contains(CardName,'Magasin ')", adviceCache.LastAdviceDocNum),
-		//Filter: "DocNum eq 102987", // For when we need to create a specific advice...............
-	})
-
-	if err != nil {
-		teams_notifier.SendRequestsReturnErrorToTeams("SapApiGetStockTransfers_AllPages", "GET", "Error", err.Error(), "SAP API")
-		return nil
-	}
 	if len(stockTransfers.Body.Value) == 0 {
-		teams_notifier.SendNoAdviceToTeams("SIMPLY: StockTransfers")
-		return nil
-	}
-
-	validItemsSap, err := sap_api_wrapper.SapApiGetItems_AllPages(sap_api_wrapper.SapApiQueryParams{
-		Select: []string{"ItemCode", "ItemBarCodeCollection", "UpdateDate", "UpdateTime"},
-		Filter: "Valid eq 'Y'",
-	})
-	if err != nil {
-		teams_notifier.SendRequestsReturnErrorToTeams("SapApiGetItems_AllPages", "GET", "Error", err.Error(), "SAP API")
 		return nil
 	}
 
 	var magasinAdvicesInfo []teams_notifier.MagasinAdviceInfo
 	for _, stockTransfer := range stockTransfers.Body.Value {
-		var docNum string
-		WarehouseCode, cardCodeExists := stockTransferCardCodes[stockTransfer.CardCode]
-		if !cardCodeExists {
-			continue // CardCode is not a magasin
+		docNum := fmt.Sprint(stockTransfer.DocNum)
+
+		businessPartner, exists := businessPartners[stockTransfer.CardCode]
+		if !exists {
+			fmt.Printf("CardCode: %v does not exists in our cardcodes?", stockTransfer.CardCode)
+			continue
+		}
+		WarehouseCode := businessPartner.AdviceWhsCode
+
+		if len(stockTransfer.StockTransferLines) == 0 {
+			teams_notifier.SendUnknownErrorToTeams(fmt.Errorf("StockTransfer %v does not have any lines but made it through the other criteria", stockTransfer.DocNum))
+			continue
 		}
 		if WarehouseCode != stockTransfer.StockTransferLines[0].WarehouseCode {
 			continue // Warehouse does not match expected warehouse
@@ -65,6 +43,7 @@ func HandleCreateAdviceStockTransfers() error {
 
 		res := "\"Følgeseddel\";\"Indkøbsnummer\";\"Stregkode\";\"Indkøbsantal\";\"Hus\""
 
+		// TODO: This could do with a rewamp. But it works.
 		for _, stockTransferLine := range stockTransfer.StockTransferLines {
 			var barcode string
 			for _, items := range validItemsSap.Body.Value {
@@ -77,7 +56,7 @@ func HandleCreateAdviceStockTransfers() error {
 				}
 			}
 
-			quantityAsInt, err := stockTransferLine.Quantity.Float64()
+			quantityAsFloat, err := stockTransferLine.Quantity.Float64()
 			if err != nil {
 				return fmt.Errorf("error converting quantity to float at stockTransfer: %v. Error:%v", stockTransfer.DocNum, err)
 			}
@@ -86,22 +65,25 @@ func HandleCreateAdviceStockTransfers() error {
 				continue // This line has no barcode so we just ignore it.
 			}
 
-			docNum = fmt.Sprint(stockTransfer.DocNum)
-
-			if stockTransfer.AdviceStatus == "S" {
-			} else {
-				adviceCache.LastAdviceDocNum = strconv.Itoa(stockTransfer.DocNum)
-			}
-
-			res += fmt.Sprintf("\n\"%v\";\"Magasin\";\"%s\";\"%v\";\"%s\"", docNum, strings.ReplaceAll(barcode, "\"", "\"\""), int(quantityAsInt), strings.ReplaceAll(stockTransferLine.WarehouseCode, "\"", "\"\""))
+			res += fmt.Sprintf("\n\"%v\";\"Magasin\";\"%s\";\"%v\";\"%s\"", docNum, strings.ReplaceAll(barcode, "\"", "\"\""), int(quantityAsFloat), strings.ReplaceAll(stockTransferLine.WarehouseCode, "\"", "\"\""))
 		}
 
-		/*
-			SendFileFtp(fmt.Sprintf("%v_StockTransfer_Reciept_Simply_%v.csv", docNum, stockTransfer.StockTransferLines[0].WarehouseCode), res, "SIMPLY")
-		*/
+		if os.Getenv("DEVMODE") == "false" {
+			err = SendFileFtp(fmt.Sprintf("%v_StockTransfer_Reciept_Simply_%v.csv", docNum, stockTransfer.StockTransferLines[0].WarehouseCode), res, "SIMPLY")
+			if err != nil {
+				return fmt.Errorf("error sending StockTransfer %v to FTP: %v", docNum, err)
+			}
+		} else {
+			err = SaveDataAsCSV(fmt.Sprintf("%v_StockTransfer_Reciept_Magasin_%v.csv", docNum, stockTransfer.StockTransferLines[0].WarehouseCode), res, "MAGASIN")
+			if err != nil {
+				return fmt.Errorf("error saving StockTransfer %v to CSV: %v", docNum, err)
+			}
+		}
+
 		err = sap_api_wrapper.SetAdviceStatus(stockTransfer.DocEntry, "Y", "StockTransfers")
 		if err != nil {
-			fmt.Println(err)
+			teams_notifier.SendUnknownErrorToTeams(fmt.Errorf("error changing advice status to 'Y' for stockTransfer: %v. \n error:%v", docNum, err))
+			// TODO: Måske skal vi bruge vores Cache til dette istedet or smide DocNum ind på dem der fejler?
 		}
 
 		var magasinAdviceInfo teams_notifier.MagasinAdviceInfo
@@ -111,15 +93,6 @@ func HandleCreateAdviceStockTransfers() error {
 		magasinAdvicesInfo = append(magasinAdvicesInfo, magasinAdviceInfo)
 	}
 
-	if adviceCache.LastAdviceDocNum != "" {
-		if err = WriteAdviceCache(adviceCache, "stockTransfers"); err != nil {
-			return fmt.Errorf("error at stockTransfer: %v adding DocNum to JSON ", adviceCache)
-		}
-	}
-
-	if len(magasinAdvicesInfo) == 0 {
-		fmt.Printf("AdvicesInfo is empty. StockTransfer: %v", stockTransfers.Body.Value)
-	}
 	teams_notifier.SendAdviceSuccesToTeams(magasinAdvicesInfo, "SIMPLY: StockTransfers")
 	return nil
 }

@@ -23,13 +23,13 @@ type SapRequestError struct {
 // adviceStats : N = Default is not sent | Y = Is sent | S = Send again
 // docType : Order | StockTransfer -> DeliveryNote | StockTransfer
 func SetAdviceStatus(docEntry int, adviceStatus string, docType string) error {
-
+	// TODO: Make sure this goes through to SAP!!! And send an Alart if it does not
 	var body adviceBody
 	body.AdviceStatus = adviceStatus
 
 	client, err := GetSapApiAuthClient()
 	if err != nil {
-		fmt.Println("Error getting an authenticaed client")
+		fmt.Println("Error getting an authenticated client")
 		return err
 	}
 
@@ -37,7 +37,7 @@ func SetAdviceStatus(docEntry int, adviceStatus string, docType string) error {
 		return fmt.Errorf("the doctype %v is not known. Valid types are: DeliveryNotes and StockTransfers", docType)
 	}
 	if docEntry == 0 {
-		return fmt.Errorf("the DocEntry cannot be 0..")
+		return fmt.Errorf("the DocEntry cannot be 0")
 	}
 
 	resp, err := client.

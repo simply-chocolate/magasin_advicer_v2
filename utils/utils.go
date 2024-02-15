@@ -41,4 +41,7 @@ func LoadEnvs() {
 	if os.Getenv("FTP_PASS_MAGASIN") == "" {
 		panic("Error loading the environment variable FTP_PASS_MAGASIN")
 	}
+	if os.Getenv("DEVMODE") == "" {
+		panic("Error loading the environment variable DEVMODE")
+	}
 }

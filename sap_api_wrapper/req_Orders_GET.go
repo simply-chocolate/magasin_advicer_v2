@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-type SapApiGetOrdersResult struct {
+type SapApiGetDeliveryNotesResult struct {
 	Value []struct {
 		DocEntry     int    `json:"DocEntry"`
 		DocDate      string `json:"DocDate"`
@@ -25,59 +25,59 @@ type SapApiGetOrdersResult struct {
 	NextLink string `json:"odata.nextLink"`
 }
 
-type SapApiGetOrdersReturn struct {
-	Body *SapApiGetOrdersResult
+type SapApiGetDerliveryNotesReturn struct {
+	Body *SapApiGetDeliveryNotesResult
 }
 
-func SapApiGetOrders(params SapApiQueryParams) (SapApiGetOrdersReturn, error) {
+func SapApiGetDeliveryNotes(params SapApiQueryParams) (SapApiGetDerliveryNotesReturn, error) {
 	client, err := GetSapApiAuthClient()
 	if err != nil {
-		return SapApiGetOrdersReturn{}, err
+		return SapApiGetDerliveryNotesReturn{}, err
 	}
 
 	resp, err := client.
 		//DevMode().
 		R().
 		SetErrorResult(SapApiErrorResult{}).
-		SetSuccessResult(SapApiGetOrdersResult{}).
+		SetSuccessResult(SapApiGetDeliveryNotesResult{}).
 		SetQueryParams(params.AsReqParams()).
 		Get("DeliveryNotes")
 
 	if err != nil {
 		if resp.ErrorResult() == nil {
-			return SapApiGetOrdersReturn{}, fmt.Errorf("error getting orders: %v", err)
+			return SapApiGetDerliveryNotesReturn{}, fmt.Errorf("error getting deliveryNotes: %v", err)
 		}
-		return SapApiGetOrdersReturn{}, fmt.Errorf("error getting orders: %v", resp.ErrorResult().(*SapApiErrorResult))
+		return SapApiGetDerliveryNotesReturn{}, fmt.Errorf("error getting deliveryNotes: %v", resp.ErrorResult().(*SapApiErrorResult))
 	}
 
 	if resp.SuccessResult() == nil {
 		fmt.Println(resp)
-		return SapApiGetOrdersReturn{}, fmt.Errorf("no orders were found")
+		return SapApiGetDerliveryNotesReturn{}, fmt.Errorf("no deliveryNotes were found")
 	}
 
-	return SapApiGetOrdersReturn{
-		Body: resp.SuccessResult().(*SapApiGetOrdersResult),
+	return SapApiGetDerliveryNotesReturn{
+		Body: resp.SuccessResult().(*SapApiGetDeliveryNotesResult),
 	}, nil
 }
 
-func SapApiGetOrders_AllPages(params SapApiQueryParams) (SapApiGetOrdersReturn, error) {
-	res := SapApiGetOrdersResult{}
+func SapApiGetDeliveryNotes_AllPages(params SapApiQueryParams) (SapApiGetDerliveryNotesReturn, error) {
+	res := SapApiGetDeliveryNotesResult{}
 	for page := 0; ; page++ {
 		params.Skip = page * 20
 
-		sapApiGetOrders, err := SapApiGetOrders(params)
+		sapApiGetDeliveryNotes, err := SapApiGetDeliveryNotes(params)
 		if err != nil {
-			return SapApiGetOrdersReturn{}, err
+			return SapApiGetDerliveryNotesReturn{}, err
 		}
 
-		res.Value = append(res.Value, sapApiGetOrders.Body.Value...)
+		res.Value = append(res.Value, sapApiGetDeliveryNotes.Body.Value...)
 
-		if sapApiGetOrders.Body.NextLink == "" {
+		if sapApiGetDeliveryNotes.Body.NextLink == "" {
 			break
 		}
 	}
 
-	return SapApiGetOrdersReturn{
+	return SapApiGetDerliveryNotesReturn{
 		Body: &res,
 	}, nil
 }

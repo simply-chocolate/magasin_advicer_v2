@@ -4,7 +4,6 @@ go 1.22
 
 require (
 	github.com/atc0005/go-teams-notify/v2 v2.10.0
-	github.com/imdario/mergo v0.3.16
 	github.com/imroc/req/v3 v3.43.0
 	github.com/jlaffaye/ftp v0.2.0
 	github.com/joho/godotenv v1.5.1
